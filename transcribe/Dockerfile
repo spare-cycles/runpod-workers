@@ -33,7 +33,7 @@ WORKDIR /app
 ARG WITH_CHALLENGERS=1
 
 # 🔴 **Every path here is relative to the REPO ROOT, not to this directory.** The build context is
-# the root because `common/` is a sibling of `transcribe/`, and the workflow passes
+# the root because `bench.py` is a sibling of `transcribe/`, and the workflow passes
 # `context: .` with `file: transcribe/Dockerfile`. Writing `COPY requirements.txt` — which is what
 # this file said while it lived at the root — fails with `"/requirements.txt": not found`, and it
 # fails at build time rather than at run time, which is the good outcome.
@@ -41,9 +41,6 @@ COPY transcribe/requirements.txt transcribe/requirements-challengers.txt ./
 RUN pip install --no-cache-dir -r requirements.txt \
  && if [ "$WITH_CHALLENGERS" = "1" ]; then pip install --no-cache-dir -r requirements-challengers.txt; fi
 
-# `common` before `transcribe`: it changes far less often, so the layer it produces survives most
-# rebuilds of the worker above it.
-COPY common ./common
 COPY transcribe ./transcribe
 COPY bench.py ./
 

@@ -1,10 +1,10 @@
-# Applies to both images: the build context is the repo root for each of them, because `common/` is
-# a sibling of the worker directories rather than a subdirectory of either.
+# The build context is the repo root rather than the worker directory, because `bench.py` is a
+# sibling of `transcribe/`. This file is what keeps that from dragging the whole checkout in.
 #
-# Note what is NOT here: neither `transcribe/` nor `coding/` is excluded from the other's build. A
-# worker image therefore carries the other's source — a few dozen KB of Python that nothing imports,
-# against a base image of many GB. Excluding it would mean two `.dockerignore` files and a build
-# that breaks the day a module moves; the trade is not close.
+# It is deliberately not per-worker. While the repo held two workers each image carried the other's
+# source — a few dozen KB of Python that nothing imports, against a base image of many GB — because
+# excluding it would have meant one `.dockerignore` per image and a build that breaks the day a
+# module moves. Same reasoning if a second worker lands again.
 .git
 .github
 tests

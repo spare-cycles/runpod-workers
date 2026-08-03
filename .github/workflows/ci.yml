@@ -2,13 +2,13 @@ name: ci
 
 # The quality gate on pull requests, where no image is built.
 #
-# One suite for the whole repo, not one per worker. The workers share `common/`, so a change there
-# has to be proved against both — and a per-worker gate would let a `common/` edit land green
-# because only the worker whose directory it touched was tested.
+# One suite for the whole repo, not one per worker. There is one worker today, but the gate is
+# repo-wide on purpose: a per-worker gate keyed on changed paths is what lets a shared edit land
+# green because only the directory it touched was tested. The repo held two workers and a `common/`
+# package until 2026-08-04, which is where that lesson comes from.
 #
-# `docker-transcribe.yml` and `docker-coding.yml` each restate this same job as their own `check`
-# before publishing anything — see the note in the first of those for why the duplication is worth
-# it and not a shared workflow.
+# `docker-transcribe.yml` restates this same job as its own `check` before publishing anything —
+# see the note there for why the duplication is worth it and not a shared workflow.
 on:
   pull_request:
   push:

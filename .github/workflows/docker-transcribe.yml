@@ -3,12 +3,14 @@ name: build-transcribe
 # Build and push the **transcription** worker image to GHCR.
 # Tags: a `transcribe-v1.2.3` tag push -> :1.2.3 + :latest; any main push -> :main + :sha-<short>.
 #
-# 🔴 **The image name is hard-coded, and must stay that way.**
+# 🔴 **The image name is hard-coded, and must stay that way — the repo name no longer matches it.**
 # It used to read `ghcr.io/${{ github.repository }}`, which was correct while this repo was called
-# `transcribe-worker` and built one image. In a monorepo that expression resolves to
+# `transcribe-worker`. Since the 2026-08-03 rename that expression resolves to
 # `ghcr.io/spare-cycles/runpod-workers` — a *different* package from the one
 # `iac-platform`'s `runpod/transcribe.yaml` pins by digest, so the endpoint would go on serving the
-# old image while every build here published somewhere nothing reads.
+# old image while every build here published somewhere nothing reads. The second worker that
+# motivated the rename is gone (2026-08-04) and this hazard is not: the repo is still
+# `runpod-workers` and the package is still `transcribe-worker`.
 #
 # ⚠️ **A GHCR package links to its repository at FIRST publish, by repository id, and there is no
 # API to fix it later.** An unlinked package cannot be written by a workflow's `GITHUB_TOKEN` — the
@@ -18,8 +20,8 @@ name: build-transcribe
 # This package was first published when this repository was called `transcribe-worker`. It kept
 # working across the 2026-08-03 rename to `runpod-workers` because a rename **preserves the
 # repository id** (`1321244198` before and after) and does not touch package names — which is
-# precisely why the monorepo was reached by renaming rather than by creating a second repo. A new
-# repo would have 403'd here until someone fixed it in the UI: Package settings →
+# precisely why the second worker was reached by renaming rather than by creating a second repo. A
+# new repo would have 403'd here until someone fixed it in the UI: Package settings →
 # Manage Actions access → Add Repository, role **Write**.
 #
 # Either way it cannot break transcription: `transcribe.yaml` pins the image **by digest**, so a
@@ -30,7 +32,6 @@ on:
     tags: ["transcribe-v*"]
     paths:
       - "transcribe/**"
-      - "common/**"
       - "tests/**"
       - "bench.py"
       - "pyproject.toml"
@@ -89,8 +90,9 @@ jobs:
       - id: build
         uses: docker/build-push-action@v6
         with:
-          # The repo root, because `common/` is a sibling of `transcribe/`. The Dockerfile's COPY
-          # paths are written against this context, not against its own directory.
+          # The repo root, not `transcribe/`, because the image also needs the top-level `bench.py`.
+          # The Dockerfile's COPY paths are written against this context, not against its own
+          # directory — a mismatch there fails the build outright, which is the good outcome.
           context: .
           file: transcribe/Dockerfile
           # amd64 only: every GPU this targets is x86, and the vLLM base image's aarch64 variant

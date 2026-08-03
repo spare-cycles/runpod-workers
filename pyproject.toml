@@ -38,6 +38,6 @@ ignore = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# The repo root, so `common`, `transcribe`, `coding` and the top-level `bench` module import without
-# an editable install — CI runs the suite against a checkout, not against a built package.
+# The repo root, so `transcribe` and the top-level `bench` module import without an editable
+# install — CI runs the suite against a checkout, not against a built package.
 pythonpath = ["."]
