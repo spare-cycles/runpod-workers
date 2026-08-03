@@ -27,16 +27,24 @@ RUN apt-get update \
 WORKDIR /app
 
 # `WITH_CHALLENGERS=1` by default so one image serves both production and the bench. The challenger
-# backend is imported lazily inside its branch (worker/backends/__init__.py), so a production worker
-# never loads librosa at all — it only carries it. Set to 0 for a lean image that cannot run
+# backend is imported lazily inside its branch (transcribe/backends/__init__.py), so a production
+# worker never loads librosa at all — it only carries it. Set to 0 for a lean image that cannot run
 # `bench.py`'s model sweep.
 ARG WITH_CHALLENGERS=1
 
-COPY requirements.txt requirements-challengers.txt ./
+# 🔴 **Every path here is relative to the REPO ROOT, not to this directory.** The build context is
+# the root because `common/` is a sibling of `transcribe/`, and the workflow passes
+# `context: .` with `file: transcribe/Dockerfile`. Writing `COPY requirements.txt` — which is what
+# this file said while it lived at the root — fails with `"/requirements.txt": not found`, and it
+# fails at build time rather than at run time, which is the good outcome.
+COPY transcribe/requirements.txt transcribe/requirements-challengers.txt ./
 RUN pip install --no-cache-dir -r requirements.txt \
  && if [ "$WITH_CHALLENGERS" = "1" ]; then pip install --no-cache-dir -r requirements-challengers.txt; fi
 
-COPY worker ./worker
+# `common` before `transcribe`: it changes far less often, so the layer it produces survives most
+# rebuilds of the worker above it.
+COPY common ./common
+COPY transcribe ./transcribe
 COPY bench.py ./
 
 ENV PYTHONUNBUFFERED=1 \
@@ -48,4 +56,4 @@ ENV PYTHONUNBUFFERED=1 \
 # blocking, before the handler is registered, so FlashBoot snapshots a worker with the model
 # already resident — so the entrypoint has to be cleared, not merely appended to.
 ENTRYPOINT []
-CMD ["python3", "-m", "worker.handler"]
+CMD ["python3", "-m", "transcribe.handler"]
