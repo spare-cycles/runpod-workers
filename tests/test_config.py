@@ -35,9 +35,11 @@ def test_chat_bias_mode_is_refused_for_a_challenger():
 
 
 def test_hotwords_is_allowed_for_a_challenger():
-    # faster-whisper takes `hotwords` as a first-class argument, which makes it the control that
-    # says whether Voxtral's `hotwords` path is doing anything at all.
-    config = load_config({"WORKER_MODEL": "whisper-fr", "WORKER_BIAS_MODE": BIAS_HOTWORDS})
+    # `hotwords` stays loadable on a challenger even though the 2026-08-03 bench proved it inert on
+    # Voxtral: the mode is a property of the request path, and refusing it here would make the
+    # config layer encode a measurement rather than a constraint. `chat` above is refused for the
+    # opposite reason — it cannot physically work without vLLM's chat endpoint.
+    config = load_config({"WORKER_MODEL": QWEN3_ASR, "WORKER_BIAS_MODE": BIAS_HOTWORDS})
     assert config.bias_mode == BIAS_HOTWORDS
     assert config.needs_vllm is False
 

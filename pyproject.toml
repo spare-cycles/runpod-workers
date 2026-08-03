@@ -16,7 +16,7 @@ ignore = [
   "ANN401",
   # Magic numbers in a bench's formatting are not a maintenance hazard.
   "PLR2004",
-  # **Lazy imports are the design here, not an oversight.** vLLM, torch, faster-whisper and the
+  # **Lazy imports are the design here, not an oversight.** vLLM, torch, transformers and the
   # RunPod SDK are each imported inside the one branch that needs them, which is what lets the
   # request contract, the chat-mode guard and the audio pipeline be tested on a CPU runner with none
   # of them installed — and what stops a production worker from paying a challenger's import cost on

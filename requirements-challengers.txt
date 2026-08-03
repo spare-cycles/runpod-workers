@@ -4,10 +4,9 @@
 # re-apply of the endpoint spec and not a second build. `worker/backends/__init__.py` imports each
 # inside its own branch, so a `voxtral-small-24b` worker pays nothing for their presence beyond the
 # disk they occupy.
-
-# ctranslate2 under the hood, with its own bundled CUDA libraries — which is why it can sit beside
-# vLLM's torch without the two fighting over a runtime.
-faster-whisper>=1.1,<2
+#
+# ⚰️ `faster-whisper` went with the `whisper-fr` backend on 2026-08-03 — see the note in
+# `worker/config.py`. That leaves one challenger, and this file exists for it alone.
 
 # transformers itself comes from the base image with vLLM; `librosa` does not, and the generic
 # `automatic-speech-recognition` pipeline needs it to resample.

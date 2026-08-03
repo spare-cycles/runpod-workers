@@ -23,16 +23,25 @@ from typing import Final
 
 # ── Models ────────────────────────────────────────────────────────────────────────────────────
 #
-# The production model and two challengers, kept wired in because none of the published French WER
+# The production model and one challenger, kept wired in because none of the published French WER
 # numbers were measured on noisy phone Opus — which is the only audio this worker will ever see.
 # `bench.py` is what settles that; these entries are what it has to compare.
+#
+# ⚰️ **`whisper-fr` (`bofenghuang/whisper-large-v3-french`) was removed 2026-08-03**, unbenched. It
+# lost on paper on two of three published French benchmarks, and the corpus that would have ranked
+# it for real — private voice notes with hand-written references — does not exist and was not going
+# to. Carrying a second inference stack for a comparison nobody was going to run is the cost this
+# removes. `git log -- worker/backends/whisper_fr.py` restores it if that judgement turns out wrong.
+#
+# 🔴 It was also the **only** backend where `hotwords` genuinely worked — faster-whisper takes it as
+# a first-class argument, which is what made it the control for the biasing question. That question
+# is answered (`chat` won, `hotwords` proved inert on Voxtral), so the control has no remaining job;
+# but if `hotwords` is ever revisited, note that this repo no longer contains a working example.
 VOXTRAL_SMALL: Final = "voxtral-small-24b"
-WHISPER_FR: Final = "whisper-fr"
 QWEN3_ASR: Final = "qwen3-asr"
 
 MODEL_IDS: Final[dict[str, str]] = {
     VOXTRAL_SMALL: "mistralai/Voxtral-Small-24B-2507",
-    WHISPER_FR: "bofenghuang/whisper-large-v3-french",
     # Challenger only, and the one id here that has not been exercised: confirm it against the Hub
     # before the bench run rather than trusting this line. `WORKER_MODEL_ID` overrides it.
     QWEN3_ASR: "Qwen/Qwen3-ASR-1.7B",
