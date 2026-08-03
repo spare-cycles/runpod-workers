@@ -5,7 +5,7 @@ transcript column as if it were speech. Nothing downstream can tell the differen
 the check has to be here and why both halves of it are asserted rather than assumed.
 """
 
-from worker.guards import min_chars_for, reject_reason
+from transcribe.guards import min_chars_for, reject_reason
 
 # 12 s of French speech is roughly 150-180 characters. The floor at the default 3.0 chars/s is 36 —
 # deliberately far below, because this catches summaries, not bad transcripts.

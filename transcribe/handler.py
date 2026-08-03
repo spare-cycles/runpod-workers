@@ -151,7 +151,7 @@ def main() -> None:
 
     config = _config()
     log.info("worker: model=%s bias_mode=%s", config.model_id, config.bias_mode)
-    # Before the handler is registered, and blocking — see `vllm_server.start`. FlashBoot snapshots
+    # Before the handler is registered, and blocking — see `common.vllm_server`. FlashBoot snapshots
     # a worker once it is idle, so a model that loads lazily is a model that is never in the snapshot.
     if config.needs_vllm:
         vllm_server.start(config)

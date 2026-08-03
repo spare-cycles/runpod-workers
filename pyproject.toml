@@ -1,7 +1,7 @@
 [project]
-name = "transcribe-worker"
+name = "runpod-workers"
 version = "0.1.0"
-description = "RunPod serverless transcription: Voxtral Small 24B on vLLM, for whatsapp-mcp and any other client"
+description = "RunPod serverless workers for the fleet: Voxtral transcription, and an OpenAI-route passthrough for coding models"
 requires-python = ">=3.12"
 
 [tool.ruff]
@@ -16,14 +16,14 @@ ignore = [
   "ANN401",
   # Magic numbers in a bench's formatting are not a maintenance hazard.
   "PLR2004",
-  # **Lazy imports are the design here, not an oversight.** vLLM, torch, transformers and the
+  # **Lazy imports are the design here, not an oversight.** vLLM, torch, transformers, httpx and the
   # RunPod SDK are each imported inside the one branch that needs them, which is what lets the
-  # request contract, the chat-mode guard and the audio pipeline be tested on a CPU runner with none
-  # of them installed — and what stops a production worker from paying a challenger's import cost on
-  # every cold start.
+  # request contract, the chat-mode guard, the audio pipeline and the route table be tested on a CPU
+  # runner with none of them installed — and what stops a production worker from paying a
+  # challenger's import cost on every cold start.
   "PLC0415",
-  # The corpus is 98 % French. Typographic apostrophes and accented characters in guard patterns and
-  # test fixtures are the subject matter, not a homoglyph attack.
+  # The transcription corpus is 98 % French. Typographic apostrophes and accented characters in
+  # guard patterns and test fixtures are the subject matter, not a homoglyph attack.
   "RUF001",
   "RUF002",
   "RUF003",
@@ -38,6 +38,6 @@ ignore = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# The repo root, so `worker` and the top-level `bench` module import without an editable install —
-# CI runs the suite against a checkout, not against a built package.
+# The repo root, so `common`, `transcribe`, `coding` and the top-level `bench` module import without
+# an editable install — CI runs the suite against a checkout, not against a built package.
 pythonpath = ["."]

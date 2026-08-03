@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pytest
 
-from worker.backends.base import Request, Result
-from worker.config import load_config
-from worker.handler import make_handler, transcribe
+from transcribe.backends.base import Request, Result
+from transcribe.config import load_config
+from transcribe.handler import make_handler, transcribe
 
 
 class FakeBackend:

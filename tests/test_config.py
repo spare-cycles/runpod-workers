@@ -1,6 +1,6 @@
 import pytest
 
-from worker.config import BIAS_CHAT, BIAS_HOTWORDS, MODEL_IDS, QWEN3_ASR, VOXTRAL_SMALL, ConfigError, load_config
+from transcribe.config import BIAS_CHAT, BIAS_HOTWORDS, MODEL_IDS, QWEN3_ASR, VOXTRAL_SMALL, ConfigError, load_config
 
 
 def test_defaults_are_the_production_configuration():

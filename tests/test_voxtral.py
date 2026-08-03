@@ -85,7 +85,7 @@ def _accepted_params() -> set[str]:
 
 
 def test_the_built_payload_only_uses_arguments_the_sdk_accepts(wav: str):
-    from worker.backends.voxtral import _EXCLUDED_FROM_OPENAI
+    from transcribe.backends.voxtral import _EXCLUDED_FROM_OPENAI
 
     payload = _payload(wav, _EXCLUDED_FROM_OPENAI)
     unexpected = set(payload) - _accepted_params()
@@ -106,7 +106,7 @@ def test_the_exclusion_list_is_load_bearing_and_not_cargo_cult(wav: str):
     Without this, a field that mistral-common later stops emitting would sit in the list forever,
     and a reader would have no way to tell a live exclusion from a dead one.
     """
-    from worker.backends.voxtral import _EXCLUDED_FROM_OPENAI
+    from transcribe.backends.voxtral import _EXCLUDED_FROM_OPENAI
 
     emitted = set(_payload(wav, ()))
     accepted = _accepted_params()

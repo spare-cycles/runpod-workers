@@ -1,22 +1,44 @@
-name: build-image
+name: build-transcribe
 
-# Build and push the transcribe-worker image to GHCR.
-# Tags: a semver tag push (v1.2.3) -> :1.2.3 + :latest; any main push -> :main + :sha-<short>.
+# Build and push the **transcription** worker image to GHCR.
+# Tags: a `transcribe-v1.2.3` tag push -> :1.2.3 + :latest; any main push -> :main + :sha-<short>.
 #
-# ⚠️ **A GHCR package links to its repository at FIRST publish and there is no API to fix it later.**
-# The link comes from `org.opencontainers.image.source` on the image config, or from having been
-# created by Actions. Pushing an already-existing package again *with* the label does not retrofit
-# it, and an unlinked package cannot be written by a workflow's `GITHUB_TOKEN` — the push dies with
-# `403 Forbidden`. If that happens, fix it in the UI: Package settings → Manage Actions access →
-# Add Repository, role **Write**.
+# 🔴 **The image name is hard-coded, and must stay that way.**
+# It used to read `ghcr.io/${{ github.repository }}`, which was correct while this repo was called
+# `transcribe-worker` and built one image. In a monorepo that expression resolves to
+# `ghcr.io/spare-cycles/runpod-workers` — a *different* package from the one
+# `iac-platform`'s `runpod/transcribe.yaml` pins by digest, so the endpoint would go on serving the
+# old image while every build here published somewhere nothing reads.
+#
+# ⚠️ **A GHCR package links to its repository at FIRST publish, by repository id, and there is no
+# API to fix it later.** An unlinked package cannot be written by a workflow's `GITHUB_TOKEN` — the
+# push dies with `403 Forbidden`, and pushing again *with* `org.opencontainers.image.source` set
+# does not retrofit the link.
+#
+# This package was first published when this repository was called `transcribe-worker`. It kept
+# working across the 2026-08-03 rename to `runpod-workers` because a rename **preserves the
+# repository id** (`1321244198` before and after) and does not touch package names — which is
+# precisely why the monorepo was reached by renaming rather than by creating a second repo. A new
+# repo would have 403'd here until someone fixed it in the UI: Package settings →
+# Manage Actions access → Add Repository, role **Write**.
+#
+# Either way it cannot break transcription: `transcribe.yaml` pins the image **by digest**, so a
+# build that never publishes leaves the running endpoint exactly where it is.
 on:
   push:
     branches: [main]
-    tags: ["v*"]
+    tags: ["transcribe-v*"]
+    paths:
+      - "transcribe/**"
+      - "common/**"
+      - "tests/**"
+      - "bench.py"
+      - "pyproject.toml"
+      - ".github/workflows/docker-transcribe.yml"
   workflow_dispatch:
 
 env:
-  IMAGE: ghcr.io/${{ github.repository }}
+  IMAGE: ghcr.io/spare-cycles/transcribe-worker
 
 jobs:
   # The same gate `ci.yml` runs, restated rather than reached for with `workflow_call`. It exists so
@@ -60,22 +82,25 @@ jobs:
           images: ${{ env.IMAGE }}
           tags: |
             type=semver,pattern={{version}}
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/transcribe-v') }}
             type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha,prefix=sha-
 
       - id: build
         uses: docker/build-push-action@v6
         with:
+          # The repo root, because `common/` is a sibling of `transcribe/`. The Dockerfile's COPY
+          # paths are written against this context, not against its own directory.
           context: .
+          file: transcribe/Dockerfile
           # amd64 only: every GPU this targets is x86, and the vLLM base image's aarch64 variant
           # carries a different CUDA pairing that nothing here has been tested against.
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=transcribe
+          cache-to: type=gha,mode=max,scope=transcribe
 
       # The RunPod endpoint spec in iac-platform pins this image **by digest**, never by tag, so the
       # digest is what a deploy actually needs. Printed here rather than looked up by hand later.

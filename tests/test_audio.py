@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from worker.audio import AudioError, decode_base64, prepare, probe_duration
+from transcribe.audio import AudioError, decode_base64, prepare, probe_duration
 
 
 def make_ogg(path: Path, seconds: float) -> bytes:

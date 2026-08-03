@@ -8,3 +8,6 @@ __pycache__/
 # never something to commit — and the results file is a per-machine measurement log.
 corpus/
 bench-results.jsonl
+
+# The local check venv (see README). Disposable; recreated by the `uv venv` line there.
+.venv/

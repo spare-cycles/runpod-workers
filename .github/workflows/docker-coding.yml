@@ -1,0 +1,85 @@
+name: build-coding
+
+# Build and push the **coding** worker image to GHCR.
+# Tags: a `coding-v1.2.3` tag push -> :1.2.3 + :latest; any main push -> :main + :sha-<short>.
+#
+# 🔴 The image name is hard-coded rather than derived from `github.repository` — in a monorepo that
+# expression names the repo, not the worker. See the note in `docker-transcribe.yml`.
+#
+# ⚠️ This package does not exist yet, so **this repo's first successful run creates it and owns the
+# link**. That is the good case, and the reason this workflow must be the first thing to publish
+# `coding-worker` — a package first created by a `docker push` from a laptop would be unlinked, and
+# there is no API to attach it afterwards.
+on:
+  push:
+    branches: [main]
+    tags: ["coding-v*"]
+    paths:
+      - "coding/**"
+      - "common/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/docker-coding.yml"
+  workflow_dispatch:
+
+env:
+  IMAGE: ghcr.io/spare-cycles/coding-worker
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install ruff pytest openai 'mistral-common[audio]'
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: pytest -q
+
+  build:
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/coding-v') }}
+            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,prefix=sha-
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          # The repo root, because `common/` is a sibling of `coding/`.
+          context: .
+          file: coding/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Scoped per worker: the two images share a base but not a layer history, and one cache
+          # would have them evicting each other's layers on every alternating build.
+          cache-from: type=gha,scope=coding
+          cache-to: type=gha,mode=max,scope=coding
+
+      # `runpod/coding.yaml` in iac-platform pins this **by digest**. The reconciler refuses a
+      # mutable tag outright, so this line is the deploy input, not a convenience.
+      - run: echo "::notice title=Image digest::${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"

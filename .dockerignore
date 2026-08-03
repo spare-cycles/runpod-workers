@@ -1,3 +1,10 @@
+# Applies to both images: the build context is the repo root for each of them, because `common/` is
+# a sibling of the worker directories rather than a subdirectory of either.
+#
+# Note what is NOT here: neither `transcribe/` nor `coding/` is excluded from the other's build. A
+# worker image therefore carries the other's source — a few dozen KB of Python that nothing imports,
+# against a base image of many GB. Excluding it would mean two `.dockerignore` files and a build
+# that breaks the day a module moves; the trade is not close.
 .git
 .github
 tests
@@ -7,4 +14,4 @@ __pycache__
 .pytest_cache
 .ruff_cache
 .venv
-README.md
+*.md
