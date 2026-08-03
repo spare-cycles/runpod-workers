@@ -1,0 +1,14 @@
+# The production path only. vLLM, torch and their CUDA pairing come from the base image and are
+# deliberately absent here — pinning them again would let this file and the image disagree.
+
+# The serverless harness: `runpod.serverless.start`.
+runpod>=1.7,<2
+
+# The OpenAI-compatible client, used against vLLM on localhost and against api.mistral.ai in the
+# bench. Not the vendor SDK for either — one client for both is what makes the bench a comparison.
+openai>=1.60,<3
+
+# `[audio]` is the part that matters: it adds soundfile, which is what `Audio.from_file` reads with.
+# vLLM already depends on mistral_common for `--tokenizer_mode mistral`, but on the base extra, so
+# without this line `AudioChunk`/`RawAudio` import and then fail at the first decode.
+mistral_common[audio]>=1.8

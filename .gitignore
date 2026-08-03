@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Bench artefacts: the corpus is real voice notes and their transcripts — private conversation, and
+# never something to commit — and the results file is a per-machine measurement log.
+corpus/
+bench-results.jsonl

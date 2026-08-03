@@ -1,0 +1,43 @@
+[project]
+name = "transcribe-worker"
+version = "0.1.0"
+description = "RunPod serverless transcription: Voxtral Small 24B on vLLM, for whatsapp-mcp and any other client"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 118
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "PL", "RUF", "ANN", "BLE", "SIM"]
+ignore = [
+  # The RunPod SDK types its handler as a bare callable, and `bench.py` is a script whose argparse
+  # namespace is untyped by construction. Annotating around either buys nothing.
+  "ANN401",
+  # Magic numbers in a bench's formatting are not a maintenance hazard.
+  "PLR2004",
+  # **Lazy imports are the design here, not an oversight.** vLLM, torch, faster-whisper and the
+  # RunPod SDK are each imported inside the one branch that needs them, which is what lets the
+  # request contract, the chat-mode guard and the audio pipeline be tested on a CPU runner with none
+  # of them installed — and what stops a production worker from paying a challenger's import cost on
+  # every cold start.
+  "PLC0415",
+  # The corpus is 98 % French. Typographic apostrophes and accented characters in guard patterns and
+  # test fixtures are the subject matter, not a homoglyph attack.
+  "RUF001",
+  "RUF002",
+  "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests name their fixtures freely and assert on literals; that is what a test is.
+"tests/*" = ["ANN", "PLR2004", "S101"]
+# `run_corpus` takes six arguments because a bench run genuinely has six independent dimensions, and
+# bundling them into a config object would only move the same list somewhere less readable.
+"bench.py" = ["PLR0913", "PLR0917"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The repo root, so `worker` and the top-level `bench` module import without an editable install —
+# CI runs the suite against a checkout, not against a built package.
+pythonpath = ["."]

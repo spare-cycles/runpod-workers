@@ -1,0 +1,10 @@
+.git
+.github
+tests
+corpus
+bench-results.jsonl
+__pycache__
+.pytest_cache
+.ruff_cache
+.venv
+README.md

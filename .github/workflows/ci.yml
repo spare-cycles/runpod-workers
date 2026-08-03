@@ -1,0 +1,28 @@
+name: ci
+
+# The quality gate on pull requests, where no image is built.
+# `docker.yml` restates the same job as its own `check` before it publishes anything — see the note
+# there for why the duplication is one file's worth and not a shared workflow.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install ruff pytest
+      - run: ruff check .
+      - run: ruff format --check .
+      # ffmpeg is a real dependency of the audio tests: they build Ogg/Opus fixtures with it and
+      # convert them back, rather than asserting that the code calls a mock the way its author
+      # imagined ffmpeg behaves. Installed after the lint gate so the fast check fails first.
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      # No vLLM, no torch, no GPU and no RunPod SDK. Every heavy import in this package sits inside
+      # the branch that needs it, which is what lets the request contract be tested on a CPU runner.
+      - run: pip install openai pytest
+      - run: pytest -q
