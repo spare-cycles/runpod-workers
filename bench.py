@@ -124,9 +124,10 @@ def _post_json(url: str, payload: dict[str, Any], headers: dict[str, str]) -> di
 class RunPodTransport:
     """`/runsync`, falling back to polling `/status` when the job does not finish inline.
 
-    ⚠️ Two different hosts carry the same `/v2` prefix: **`api.runpod.ai`** takes jobs (this class)
-    and **`api.runpod.io`** manages endpoints (`runpod-sync.py`, in the iac-platform repo). Mixing
-    them produces a 401 that reads like a bad key.
+    ⚠️ Three hosts, two sharing a `/v2` prefix. **`api.runpod.ai/v2/<id>`** takes jobs — this
+    class. Management is **`rest.runpod.io/v1`** (what `runpod-sync.py` in the iac-platform repo
+    speaks), with **`api.runpod.io/v2`** as a beta alias onto the same paths. A job sent to either
+    management host returns a 401 that reads exactly like a bad key.
     """
 
     def __init__(self, endpoint_id: str, api_key: str) -> None:
@@ -402,6 +403,6 @@ def main(argv: list[str] | None = None) -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except urllib.error.HTTPError as err:  # a 401 here is almost always api.runpod.ai vs api.runpod.io
+    except urllib.error.HTTPError as err:  # a 401 here is almost always the wrong host — see RunPodTransport
         print(f"bench: HTTP {err.code} — {err.read().decode('utf8', 'replace')[:400]}", file=sys.stderr)
         raise SystemExit(1) from err

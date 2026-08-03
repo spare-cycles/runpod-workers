@@ -84,8 +84,10 @@ a file. At WhatsApp's ~16 kbps Opus the 900 s ceiling is about 2.4 MB of base64,
 RunPod's 10 MB request limit; a payload that blows it is a transcoded video the caller should have
 gated on length.
 
-⚠️ **Two hosts share the `/v2` prefix.** `api.runpod.ai` takes jobs; `api.runpod.io` manages
-endpoints. Mixing them produces a 401 that reads exactly like a bad key.
+⚠️ **Three hosts, two of them sharing a `/v2` prefix.** `api.runpod.ai/v2/<id>` takes **jobs** —
+that is this contract. Management lives elsewhere: `rest.runpod.io/v1` (the surface whose field
+names are documented) with `api.runpod.io/v2` as a beta alias serving the same paths. A job sent to
+either management host returns a 401 that reads exactly like a bad key.
 
 ## Configuration
 
