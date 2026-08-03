@@ -24,5 +24,12 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg
       # No vLLM, no torch, no GPU and no RunPod SDK. Every heavy import in this package sits inside
       # the branch that needs it, which is what lets the request contract be tested on a CPU runner.
-      - run: pip install openai pytest
+      #
+      # `mistral-common[audio]` is here for `test_voxtral.py` and is worth its install time: the
+      # Voxtral request is built entirely from that library's symbols and serialised against the
+      # OpenAI SDK's argument list, and neither is reachable from a test that fakes the backend. Two
+      # bugs — a moved import and a field `transcriptions.create` will not accept — reached a rented
+      # A100 because nothing on a CPU runner had ever constructed the real request. It pulls numpy
+      # and soundfile, not torch.
+      - run: pip install openai pytest 'mistral-common[audio]'
       - run: pytest -q

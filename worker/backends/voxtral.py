@@ -46,6 +46,14 @@ _TEMPERATURE: Final = 0.0
 _CHARS_PER_TOKEN: Final = 3
 _MIN_CHAT_TOKENS: Final = 512
 
+# Fields `TranscriptionRequest.to_openai` emits that `client.audio.transcriptions.create` does not
+# accept. `top_p` and `seed` are Mistral completion parameters with no place on the OpenAI
+# transcription surface; `target_streaming_delay_ms` belongs to the streaming protocol and is emitted
+# as `None` even when streaming is off, which is still a `TypeError` because the SDK's signature is
+# closed. Anything mistral-common adds here later fails the same way — see `test_voxtral.py`, which
+# recomputes this set from the installed SDK rather than trusting this constant.
+_EXCLUDED_FROM_OPENAI: Final = ("top_p", "seed", "target_streaming_delay_ms")
+
 
 def _chat_prompt(bias_terms: tuple[str, ...]) -> str:
     """The instruction for `chat` mode, with the biasing terms in it.
@@ -95,18 +103,25 @@ class VoxtralBackend:
     # ── transcription endpoint ────────────────────────────────────────────────────────────────
 
     def _transcribe_endpoint(self, req: Request, hotwords: tuple[str, ...]) -> Result:
-        from mistral_common.audio import Audio, RawAudio
-        from mistral_common.protocol.transcription.request import TranscriptionRequest
+        from mistral_common.protocol.transcription.request import Audio, TranscriptionRequest
 
         audio = Audio.from_file(str(req.path), strict=False)
         payload = TranscriptionRequest(
             model=self._config.model_id,
-            audio=RawAudio.from_audio(audio),
+            # Base64 rather than the `RawAudio` wrapper, which mistral-common deprecated in 1.11 and
+            # removes in 1.13 — and which is the class that was imported from the wrong module and
+            # took the first real request down. Passing the encoded bytes directly is both the
+            # supported form and one fewer symbol whose module can move. The re-encode to WAV is
+            # free in the way that matters: this request never leaves the container.
+            audio=audio.to_base64("wav"),
             language=req.language,
             temperature=_TEMPERATURE,
-            # `to_openai` emits every field the protocol defines; `top_p` and `seed` are not part of
-            # the OpenAI transcription surface and vLLM rejects the request outright with them on.
-        ).to_openai(exclude=("top_p", "seed"))
+            # `to_openai` emits every field the protocol defines, and three of them are not
+            # arguments of `client.audio.transcriptions.create`. That signature has no `**kwargs`,
+            # so each one is a `TypeError` before a single byte reaches vLLM — not a server-side
+            # rejection that would show up in a log. `_EXCLUDED_FROM_OPENAI` is why this list is
+            # asserted against the live SDK signature in the tests rather than maintained by hand.
+        ).to_openai(exclude=_EXCLUDED_FROM_OPENAI)
 
         extra: dict[str, Any] = {}
         if hotwords:
@@ -123,8 +138,8 @@ class VoxtralBackend:
     # ── chat endpoint ─────────────────────────────────────────────────────────────────────────
 
     def _chat_endpoint(self, req: Request) -> Result:
-        from mistral_common.audio import Audio
         from mistral_common.protocol.instruct.messages import AudioChunk, TextChunk, UserMessage
+        from mistral_common.protocol.transcription.request import Audio
 
         audio = Audio.from_file(str(req.path), strict=False)
         message = UserMessage(

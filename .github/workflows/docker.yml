@@ -28,7 +28,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install ruff pytest openai
+      # `mistral-common[audio]` is what makes `test_voxtral.py` run rather than skip — it builds the
+      # real Voxtral request and checks it against the OpenAI SDK's argument list. Skipping it here
+      # would let the gate that publishes the image be weaker than the one on the pull request.
+      - run: pip install ruff pytest openai 'mistral-common[audio]'
       - run: ruff check .
       - run: ruff format --check .
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg
