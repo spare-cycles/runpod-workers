@@ -28,8 +28,14 @@ languages) counts for nothing and why French-specific numbers are the only ones 
 smaller GPUs; copying it here would double the bill to serve one model twice as awkwardly.
 
 ⚠️ **None of those benchmarks is noisy phone Opus.** FLEURS is read news, MLS audiobooks, Common
-Voice crowd recordings in a quiet room. That is why `whisper-large-v3-french` and `Qwen3-ASR` stay
-wired in as challengers and why [`bench.py`](bench.py) exists.
+Voice crowd recordings in a quiet room. That is why `Qwen3-ASR` stays wired in as a challenger and
+why [`bench.py`](bench.py) exists.
+
+⚰️ **`whisper-fr` was removed on 2026-08-03, unbenched.** It lost on paper on two of the three
+published French benchmarks, and the corpus that would have ranked it for real — private voice notes
+with hand-written references — does not exist and was not going to. A second inference stack
+(`faster-whisper`, ctranslate2) carried in the image for a comparison nobody was going to run is
+what that removal buys back. `git log -- worker/backends/whisper_fr.py` restores it.
 
 ## Context biasing is a question, not a feature
 
@@ -46,7 +52,13 @@ does not hold on the transcription path**, and the correction shaped the whole d
 
 Biasing may still be worth a lot: proper nouns are where casual-speech WER accumulates, and a chat
 client knows the participants' names. But it has to be **measured**, so the worker implements three
-modes and the bench picks one.
+modes and the bench picked one.
+
+✅ **Answered 2026-08-03 — `chat` won, `hotwords` is inert.** Ten French notes, one arm per mode:
+5.24 % mean WER for `chat` against 17.36 % for both `none` and `hotwords`, with the name under test
+going 0/10 to 9/10. `hotwords` returned **byte-identical text to the baseline on all ten** — at
+`temperature=0` that means the parameter never reached the sampler, so vLLM accepts it and discards
+it. Full result, and the paraphrase risk `chat` carries, in [`bench/README.md`](bench/README.md).
 
 | `WORKER_BIAS_MODE` | Endpoint | Status |
 |---|---|---|
@@ -93,7 +105,7 @@ either management host returns a 401 that reads exactly like a bad key.
 
 | Variable | Default | What it does |
 |---|---|---|
-| `WORKER_MODEL` | `voxtral-small-24b` | also `whisper-fr`, `qwen3-asr` — challengers, for the bench |
+| `WORKER_MODEL` | `voxtral-small-24b` | also `qwen3-asr` — a challenger, for the bench |
 | `WORKER_MODEL_ID` | *(per model)* | override the Hugging Face repo without changing the backend |
 | `WORKER_BIAS_MODE` | `none` | `none` \| `hotwords` \| `chat` |
 | `MAX_AUDIO_SECONDS` | `900` | refused before any GPU time is spent; keep in step with the endpoint's `execution_timeout_ms` |

@@ -27,9 +27,9 @@ RUN apt-get update \
 WORKDIR /app
 
 # `WITH_CHALLENGERS=1` by default so one image serves both production and the bench. The challenger
-# backends are imported lazily inside their branch (worker/backends/__init__.py), so a production
-# worker never loads faster-whisper at all — it only carries it. Set to 0 for a lean image that
-# cannot run `bench.py`'s model sweep.
+# backend is imported lazily inside its branch (worker/backends/__init__.py), so a production worker
+# never loads librosa at all — it only carries it. Set to 0 for a lean image that cannot run
+# `bench.py`'s model sweep.
 ARG WITH_CHALLENGERS=1
 
 COPY requirements.txt requirements-challengers.txt ./
